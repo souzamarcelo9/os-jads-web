@@ -1,7 +1,7 @@
 import { getToken, isSupported, onMessage } from "firebase/messaging";
 import { ref, set } from "firebase/database";
 
-import { app, auth, rtdb, getFirebaseMessaging } from "./firebase";
+import { auth, rtdb, getFirebaseMessaging } from "./firebase";
 
 const TENANT_ID = "default";
 

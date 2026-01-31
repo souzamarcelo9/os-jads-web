@@ -1,4 +1,4 @@
-import { Box, Divider, Heading, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Divider, Heading, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import type { WorkOrder, Client, Vessel, Equipment } from "../../lib/firebase/db";
 import { Image } from "@chakra-ui/react";
 import type { WorkOrderPhoto } from "../../lib/firebase/db";

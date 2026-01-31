@@ -124,9 +124,9 @@ export default function WorkOrderDetailsPage() {
 }, [wo]);
  
 const handlePrint = useReactToPrint({
-  content: () => printRef.current,
+  contentRef: printRef,
   documentTitle: wo ? `OS-${wo.code || wo.id}` : "OS",
-  });
+});
 
  if (!wo) {
      return (
@@ -148,9 +148,15 @@ const handlePrint = useReactToPrint({
           <HStack justify="space-between" align="start">
             
            {wo ? (
-            <Box position="absolute" left="-99999px" top={0}>
+            <Box position="fixed" top={0} left={0} opacity={0} pointerEvents="none" zIndex={-1}>
               <Box ref={printRef}>
-                <WorkOrderPrintView workOrder={wo} client={client} vessel={vessel} equipment={equipmentItem} photos={photos} />
+                <WorkOrderPrintView
+                  workOrder={wo}
+                  client={client}
+                  vessel={vessel}
+                  equipment={equipmentItem}
+                  photos={photos}
+                />
               </Box>
             </Box>
             
@@ -196,7 +202,7 @@ const handlePrint = useReactToPrint({
                 Aplicar status
               </Button>
 
-              <Button mt={2} variant="outline" width="100%" onClick={handlePrint}>
+              <Button mt={2} variant="outline" width="100%" onClick={() => handlePrint()}>
                 Exportar PDF
               </Button>
             </Box>

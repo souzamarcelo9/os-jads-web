@@ -4,7 +4,7 @@ import { firebaseStorage, firebaseDb } from "./firebase";
 import { getDownloadURL, ref as sref, uploadBytes, deleteObject } from "firebase/storage";
 import { nanoid } from "nanoid"; 
 
-import type { WorkOrderPhoto } from "./db";
+//import type { WorkOrderPhoto } from "./db";
 
 export const rtdb = getDatabase(app);
 
