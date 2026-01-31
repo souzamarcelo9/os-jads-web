@@ -26,7 +26,7 @@ export function WorkOrderPrintView({
       <Stack spacing={3}>
         <Heading size="sm">Cliente</Heading>
         <Text><b>Nome:</b> {client?.name || "-"}</Text>
-        <Text><b>Contato:</b> {client?.contact || "-"}</Text>
+        <Text><b>Contato:</b> {client?.contactName || "-"}</Text>
         <Text><b>Endereço:</b> {client?.address || "-"}</Text>
 
         <Divider />
