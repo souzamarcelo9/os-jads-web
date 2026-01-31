@@ -42,9 +42,18 @@ export function WorkOrderPhotos({
       }
 
       toast({ status: "success", title: "Fotos enviadas" });
-    } catch (e: any) {
-      toast({ status: "error", title: "Erro ao enviar foto", description: e?.message || String(e) });
-    } finally {
+    } 
+    catch (e: unknown) {
+    const err = e instanceof Error ? e.message : String(e);
+
+    toast({
+        status: "error",
+        title: "Erro ao remover foto",
+        description: err,
+    });
+    }
+    finally 
+    {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
@@ -54,8 +63,14 @@ export function WorkOrderPhotos({
     try {
       await deleteWorkOrderPhoto(woId, p);
       toast({ status: "success", title: "Foto removida" });
-    } catch (e: any) {
-      toast({ status: "error", title: "Erro ao remover foto", description: e?.message || String(e) });
+    } catch (e: unknown) {
+    const err = e instanceof Error ? e.message : String(e);
+
+    toast({
+        status: "error",
+        title: "Erro ao remover foto",
+        description: err,
+    });
     }
   }
 
