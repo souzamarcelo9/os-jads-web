@@ -18,6 +18,20 @@ export function WorkOrderPrintView({
 }) {
   return (
     <Box p={8}>
+      <HStack justify="space-between" align="center" mb={4}>
+        <Image
+          src="/brand/godwrites-logo.jpg"
+          alt="God Writes"
+          h="60px"
+          objectFit="contain"
+        />
+        <Box textAlign="right">
+          <Heading size="sm">Ordem de Serviço</Heading>
+          <Text fontSize="sm" color="gray.600">
+            {workOrder.code}
+          </Text>
+        </Box>
+      </HStack>
       <Heading size="lg">Ordem de Serviço</Heading>
       <Text color="gray.600">Código: {workOrder.code}</Text>
 

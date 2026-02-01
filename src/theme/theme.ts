@@ -1,4 +1,5 @@
 import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
+import type { StyleFunctionProps } from "@chakra-ui/theme-tools";
 
 const config: ThemeConfig = {
   initialColorMode: "light",
@@ -21,16 +22,28 @@ export const theme = extendTheme({
   },
   colors: {
     brand: {
-      50: "#eef4ff",
-      100: "#d9e5ff",
-      200: "#b3cbff",
-      300: "#8db1ff",
-      400: "#6797ff",
-      500: "#3f7cff",
-      600: "#2f61db",
-      700: "#2348a8",
-      800: "#173076",
-      900: "#0b1944",
+      50: "#E7EFF6",
+      100: "#C7D9EA",
+      200: "#A5C2DD",
+      300: "#83A3BB",
+      400: "#437398",
+      500: "#014173", // azul God Writes
+      600: "#013863",
+      700: "#012F53",
+      800: "#012643",
+      900: "#001B33",
+    },
+    accent: {
+      50: "#FFF6E5",
+      100: "#FFE7B8",
+      200: "#FFD88A",
+      300: "#FFC95C",
+      400: "#F8BA3E",
+      500: "#F5AF30", // laranja God Writes
+      600: "#D9951E",
+      700: "#B87713",
+      800: "#8E5B0A",
+      900: "#5F3C00",
     },
   },
   radii: {
@@ -52,13 +65,13 @@ export const theme = extendTheme({
         },
       },
     },
-    Button: {
+   Button: {
       baseStyle: {
         borderRadius: "14px",
         fontWeight: 700,
       },
       variants: {
-        solid: (props: any) => ({
+        solid: (props: StyleFunctionProps) => ({
           bg: props.colorScheme === "brand" ? "brand.500" : undefined,
           _hover: { bg: props.colorScheme === "brand" ? "brand.600" : undefined },
           _active: { transform: "translateY(1px)" },

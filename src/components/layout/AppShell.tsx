@@ -2,6 +2,8 @@ import {
   Avatar,
   Badge,
   Box,
+  Image,
+  Stack,
   Flex,
   HStack,
   Icon,
@@ -19,6 +21,7 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FiAnchor,FiClipboard, FiHome, FiLogOut, FiMessageSquare, FiSearch, FiTool, FiUsers } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
+
 
 const navItems = [
   { to: "/app/dashboard", label: "Dashboard", icon: FiHome },
@@ -51,22 +54,24 @@ export function AppShell() {
 
   return (
     <Flex minH="100vh" bg="gray.50">
-      {/* Sidebar */}
+      {/* Sidebar */}      
       <Box w="300px" p={4}>
+        
         <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="22px" boxShadow="soft" p={4}>
-          <HStack justify="space-between" mb={4}>
-            <Box>
-              <Text fontWeight="800" fontSize="lg" lineHeight="1">
-                OS SaaS
-              </Text>
-              <Text fontSize="sm" color="gray.500">
-                Offshore • Hidráulica • Eletrônica
-              </Text>
-            </Box>
-            <Badge colorScheme="blue" borderRadius="999px" px={3}>
-              v0.1
-            </Badge>
-          </HStack>
+          
+          <Box px={4} pt={5} pb={4}>
+          <Stack spacing={2} align="flex-start">
+            <Image
+              src="/brand/godwrites-logo.jpg"
+              alt="God Writes"
+              h="80px"
+              objectFit="contain"
+            />
+            <Text fontSize="sm" color="gray.500" fontWeight="600">
+              Soluções em Tecnologia
+            </Text>
+          </Stack>
+        </Box>
 
           <VStack align="stretch" spacing={2}>
             {navItems.map((it) => (
