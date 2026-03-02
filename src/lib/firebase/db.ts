@@ -17,6 +17,7 @@ export type Client = {
   address?: string;
   createdAt: number;
   updatedAt: number;
+  document?: string | null; // ✅ CNPJ/CPF  
 };
 
 type RtdbRecord<T> = Record<string, T>;
@@ -155,6 +156,7 @@ export type WorkOrderStatus =
   | "CANCELADO";
 
 export type WorkOrderPriority = "baixa" | "media" | "alta" | "critica";
+export type WorkOrderServiceMode = "INTERNO" | "EXTERNO";
 
 export type WorkOrder = {
   id: string;
@@ -165,9 +167,14 @@ export type WorkOrder = {
   assigneeUid?: string; // responsável (uid do auth)
   reportedDefect: string;
   serviceReport?: string;
+  serviceMode?: WorkOrderServiceMode; // novo (opcional por compatibilidade)
+  analysisFeeEnabled?: boolean;       // opcional (para o fluxo interno)
   photos?: Record<string, WorkOrderPhoto>;
   priority: WorkOrderPriority;
   status: WorkOrderStatus;
+
+  analysisFeeCharged?: boolean | null;  // 👈 AQUI
+  needsParts?: boolean;                 // 👈 AQUI
 
   createdAt: number;
   updatedAt: number;
@@ -219,6 +226,10 @@ export async function createWorkOrder(
     createdAt: now,
     updatedAt: now,
     statusUpdatedAt: now,
+    serviceMode: data.serviceMode,
+    analysisFeeCharged: data.analysisFeeCharged ?? null,
+    needsParts: data.needsParts ?? false,
+    status: "EM_ANALISE",       // ⚠️ vai ser ajustado pela Cloud Function na Etapa 2    
   });
 
   return id;

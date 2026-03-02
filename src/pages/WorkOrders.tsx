@@ -68,11 +68,19 @@ type WorkOrderForm = {
   clientId: string;
   vesselId?: string;
   equipmentId?: string;
+
+  serviceMode: "INTERNO" | "EXTERNO";
+  analysisFeeCharged?: string; // "true" | "false" (vem do Select)
+
+  priority: "baixa" | "media" | "alta" | "critica";
   reportedDefect: string;
   serviceReport?: string;
-  priority: WorkOrderPriority;
-  status: WorkOrderStatus;
 };
+
+type CreateWorkOrderPayload = Omit<
+  WorkOrder,
+  "id" | "code" | "createdAt" | "updatedAt" | "statusUpdatedAt"
+>;
 
 function statusBadge(status: WorkOrderStatus) {
   switch (status) {
@@ -119,7 +127,13 @@ export default function WorkOrdersPage() {
   const toast = useToast();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, reset, formState, watch, setValue } = useForm<WorkOrderForm>();
+  const { register, handleSubmit, reset, formState, watch, setValue } = useForm<WorkOrderForm>({
+  defaultValues: {
+    serviceMode: "EXTERNO",
+    analysisFeeCharged: "false",
+    priority: "media",
+  },
+});;
 
   // filtros topo
   const [q, setQ] = useState("");
@@ -193,7 +207,7 @@ export default function WorkOrdersPage() {
       reportedDefect: "",
       serviceReport: "",
       priority: "media",
-      status: "EM_ANALISE",
+      //status: "EM_ANALISE",
     });
     onOpen();
   }
@@ -207,7 +221,7 @@ export default function WorkOrdersPage() {
       reportedDefect: wo.reportedDefect ?? "",
       serviceReport: wo.serviceReport ?? "",
       priority: wo.priority,
-      status: wo.status,
+      //status: wo.status,
     });
     onOpen();
   }
@@ -217,10 +231,17 @@ export default function WorkOrdersPage() {
       toast({ status: "error", title: "Selecione um cliente." });
       return;
     }
-    const payload = {
+    const payload: CreateWorkOrderPayload = {
       ...data,
       vesselId: data.vesselId || undefined,
       equipmentId: data.equipmentId || undefined,
+      serviceMode: data.serviceMode,
+      analysisFeeCharged:
+      data.serviceMode === "INTERNO"
+        ? data.analysisFeeCharged === "true"
+        : null,
+      status: "EM_ANALISE",
+    needsParts: false, // default
     };
 
     try {
@@ -228,7 +249,7 @@ export default function WorkOrdersPage() {
         await updateWorkOrder(selected.id, payload);
         toast({ status: "success", title: "Ordem atualizada." });
       } else {
-        await createWorkOrder(payload as any);
+        await createWorkOrder(payload);
         toast({ status: "success", title: "Ordem criada." });
       }
       onClose();
@@ -596,17 +617,14 @@ export default function WorkOrdersPage() {
                   </HStack>
 
                   <HStack spacing={4}>
-                    <FormControl>
-                      <FormLabel>Status</FormLabel>
-                      <Select {...register("status")}>
-                        <option value="EM_ANALISE">Em análise</option>
-                        <option value="AGUARDANDO_PECA">Aguardando peça</option>
-                        <option value="AGUARDANDO_APROVACAO_ORCAMENTO">Aguardando aprovação de orçamento</option>
-                        <option value="EM_EXECUCAO">Em execução</option>
-                        <option value="CONCLUIDO">Concluído</option>
-                        <option value="CANCELADO">Cancelado</option>
+                    <FormControl isRequired>
+                      <FormLabel>Tipo de atendimento</FormLabel>
+                      <Select {...register("serviceMode", { required: true })}>
+                        <option value="EXTERNO">Externo (a bordo)</option>
+                        <option value="INTERNO">Interno (laboratório)</option>
                       </Select>
                     </FormControl>
+
                     <FormControl>
                       <FormLabel>Prioridade</FormLabel>
                       <Select {...register("priority")}>
@@ -617,6 +635,16 @@ export default function WorkOrdersPage() {
                       </Select>
                     </FormControl>
                   </HStack>
+
+                  {watch("serviceMode") === "INTERNO" ? (
+                    <FormControl>
+                      <FormLabel>Cobrar taxa de análise?</FormLabel>
+                      <Select {...register("analysisFeeCharged")}>
+                        <option value="false">Não cobrar</option>
+                        <option value="true">Cobrar</option>
+                      </Select>
+                    </FormControl>
+                  ) : null}
 
                   <FormControl isRequired>
                     <FormLabel>Defeito reportado</FormLabel>

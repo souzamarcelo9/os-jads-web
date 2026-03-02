@@ -11,7 +11,12 @@ import EquipmentPage from "../pages/Equipment";
 import WorkOrderDetailsPage from "../pages/WorkOrderDetails";
 import DashboardOps from "../pages/DashboardOps";
 import WorkOrdersKanbanPage from "../pages/WorkOrdersKanban";
-
+import BudgetsPage from "../pages/Budgets";
+import BudgetDetailsPage from "../pages/BudgetDetails";
+//import ReportsPage from "../pages/Reports";
+//import ReportEditorPage from "../pages/ReportEditor";
+import ReportDetailsPage from "../pages/ReportDetailsPage";
+import ReportsListPage from "../pages/ReportsListPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app/dashboard" replace /> },
@@ -32,8 +37,13 @@ export const router = createBrowserRouter([
       { path: "equipment", element: <EquipmentPage /> },
       { path: "work-orders/:id", element: <WorkOrderDetailsPage /> },
       { path: "dashboard-admin", element: <DashboardPage /> },
-      { path: "work-orders-kanban", element: <WorkOrdersKanbanPage /> }
-      
+      { path: "work-orders-kanban", element: <WorkOrdersKanbanPage /> },
+      { path: "budgets", element: <BudgetsPage /> },
+      { path: "budgets/:id", element: <BudgetDetailsPage /> },
+      { path: "reports", element: <ReportsListPage /> },      
+      { path: "reports/new", element: <ReportDetailsPage /> },
+      { path: "reports/:workOrderId", element: <ReportDetailsPage /> },        
+      //<Route path="/app/reports/:workOrderId" element={<ReportDetailsPage />} />          
     ],
   },
 ]);
