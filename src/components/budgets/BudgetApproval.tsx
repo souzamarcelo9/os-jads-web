@@ -41,9 +41,9 @@ export function BudgetApproval({ budget }: { budget: Budget }) {
 
   async function confirm() {
     try {
-      if (mode === "SEND") await sendBudgetToClient({ budgetId: budget.id, decidedByUid: uid, note });
-      if (mode === "APPROVE") await approveBudget({ budgetId: budget.id, decidedByUid: uid, note });
-      if (mode === "REJECT") await rejectBudget({ budgetId: budget.id, decidedByUid: uid, note });
+      if (mode === "SEND") await sendBudgetToClient( budget.id);
+      if (mode === "APPROVE") await approveBudget({ budgetId: budget.id, clientName: uid, note });
+      if (mode === "REJECT") await rejectBudget({ budgetId: budget.id, clientName: uid, note });
 
       toast({
         status: "success",

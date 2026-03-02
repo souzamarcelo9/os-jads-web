@@ -1,7 +1,7 @@
 import { Box, Divider, Heading, HStack, Stack, Text } from "@chakra-ui/react";
-import type { WorkReport } from "../../lib/firebase/reports.types";
+import type { WorkOrderReport } from "../../lib/firebase/reports.types";
 import type { Client, Vessel, Equipment, WorkOrder } from "../../lib/firebase/db";
-import  GodWritesLogo  from "../../../public/brand/godwrites-logo.jpg";
+//import  GodWritesLogo  from "../../../public/brand/godwrites-logo.jpg";
 
 function safe(v: unknown) {
   if (v === null || v === undefined) return "-";
@@ -31,7 +31,7 @@ function Line({ label, value }: { label: string; value: string }) {
 }
 
 export function ReportPrintView(props: {
-  report: WorkReport;
+  report: WorkOrderReport;
   workOrder: WorkOrder;
   client: Client | null;
   vessel: Vessel | null;
@@ -43,10 +43,10 @@ export function ReportPrintView(props: {
     <Box p={8} bg="white" color="black">
       <HStack justify="space-between" align="start">
         <Box>
-          <GodWritesLogo variant="print" />
+          {/* <GodWritesLogo variant="print" />
           <Text fontSize="sm" color="gray.600" mt={2}>
             Automação Hidráulica Móvel • Eletrônica • Offshore • Embarcações
-          </Text>
+          </Text> */}
         </Box>
 
         <Box textAlign="right">
@@ -79,8 +79,8 @@ export function ReportPrintView(props: {
         <Heading size="sm">IDENTIFICAÇÃO DO EQUIPAMENTO</Heading>
 
         <Line label="Equipamento" value={safe(report.equipmentName ?? equipment?.name)} />
-        <Line label="Modelo" value={safe(report.equipmentModel)} />
-        <Line label="Série" value={safe(report.equipmentSerial)} />
+        {/* <Line label="Modelo" value={safe(report.equipmentModel)} />
+        <Line label="Série" value={safe(report.equipmentSerial)} /> */}
       </Stack>
 
       <Divider my={6} />
@@ -93,7 +93,7 @@ export function ReportPrintView(props: {
             Defeito / solicitação
           </Text>
           <Text whiteSpace="pre-wrap" fontSize="sm">
-            {safe(report.reportedIssue ?? workOrder.reportedDefect)}
+            {/* {safe(report.reportedIssue ?? workOrder.reportedDefect)} */}
           </Text>
         </Box>
 
@@ -102,7 +102,7 @@ export function ReportPrintView(props: {
             Atividades realizadas
           </Text>
           <Text whiteSpace="pre-wrap" fontSize="sm">
-            {safe(report.activities)}
+           {/*  {safe(report.activities)} */}
           </Text>
         </Box>
 
@@ -139,10 +139,10 @@ export function ReportPrintView(props: {
           <Box w="48%">
             <Box borderTop="1px solid" borderColor="gray.400" pt={2}>
               <Text fontSize="sm" fontWeight="700">
-                {safe(report.clientRepName)}
+                {safe(report.shipOwner)}
               </Text>
               <Text fontSize="xs" color="gray.600">
-                {safe(report.clientRepRole)}
+                {safe(report.callSign)}
               </Text>
             </Box>
           </Box>

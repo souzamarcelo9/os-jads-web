@@ -19,7 +19,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FiAnchor,FiClipboard, FiDollarSign, FiHome, FiLogOut, FiMessageSquare, FiRadio, FiSearch, FiTool, FiUsers } from "react-icons/fi";
+import { FiAnchor,FiClipboard, FiHome, FiLogOut, FiMessageSquare, FiRadio, FiSearch, FiTool, FiUsers } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
 
 

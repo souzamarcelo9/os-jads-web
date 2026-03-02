@@ -225,33 +225,40 @@ export default function ReportDetailsPage() {
   useEffect(() => {
   if (!report || !wo) return;
 
-  // só preenche se estiver vazio (não sobrescreve o que o usuário já digitou)
   setReport((prev) => {
     if (!prev) return prev;
 
     const next = { ...prev };
 
-    // Atendimento
     if (isEmpty(next.osNumber)) next.osNumber = wo.code ?? prev.workOrderId;
     if (isEmpty(next.vesselName)) next.vesselName = vessel?.name ?? "";
     if (isEmpty(next.shipOwner)) next.shipOwner = client?.name ?? "";
     if (isEmpty(next.serviceDate)) next.serviceDate = new Date().toLocaleDateString("pt-BR");
 
-    // Equipamento
     if (isEmpty(next.equipmentName)) next.equipmentName = equipmentItem?.name ?? "";
     if (isEmpty(next.model)) next.model = equipmentItem?.model ?? "";
     if (isEmpty(next.serialNumber)) next.serialNumber = equipmentItem?.serial ?? "";
 
-    // Opcional: já puxar o defeito para a descrição do serviço (se estiver vazio)
     if (isEmpty(next.servicesPerformed) && !isEmpty(wo.reportedDefect)) {
       next.servicesPerformed = `Defeito relatado: ${wo.reportedDefect}`;
     }
 
-    // se não mudou nada, evita re-render à toa
     const changed = JSON.stringify(next) !== JSON.stringify(prev);
     return changed ? { ...next, updatedAt: Date.now() } : prev;
   });
-  }, [report?.id, wo?.id, wo?.code, wo?.reportedDefect, client?.name, vessel?.name, equipmentItem?.name, equipmentItem?.model, equipmentItem?.serial]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [
+  report?.id,
+  wo?.id,
+  wo?.code,
+  wo?.reportedDefect,
+  client?.name,
+  vessel?.name,
+  equipmentItem?.name,
+  equipmentItem?.model,
+  equipmentItem?.serial,
+]);
 
   // subscribe report (1 por OS)
   useEffect(() => {
