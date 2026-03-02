@@ -11,21 +11,21 @@ import {
   Stack,
  // useToast,
 } from "@chakra-ui/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 
 //import { subscribeReportByWO, upsertReportForWO } from "../lib/firebase/reports.db";
 
 import {
-  subscribeClients,
-  subscribeEquipment,
-  subscribeVessels,
-  subscribeWorkOrderById,
+  //subscribeClients,
+  //subscribeEquipment,
+  //subscribeVessels,
+  //subscribeWorkOrderById,
 } from "../lib/firebase/db";
 
-import type { Client, Vessel, Equipment, WorkOrder } from "../lib/firebase/db";
-import { ReportPrintView } from "../components/reports/ReportPrintView";
+//import type { Client, Vessel, Equipment, WorkOrder } from "../lib/firebase/db";
+//import { ReportPrintView } from "../components/reports/ReportPrintView";
 
 
 export default function ReportEditorPage() {
@@ -33,10 +33,10 @@ export default function ReportEditorPage() {
   //const toast = useToast();
 
 
-  const [wo, setWo] = useState<WorkOrder | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
+  //const [wo, setWo] = useState<WorkOrder | null>(null);
+  /* const [clients, setClients] = useState<Client[]>([]);
   const [vessels, setVessels] = useState<Vessel[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]); */
   //const [report, setReport] = useState<WorkOrderReport | null>(null);
 
   // form local (simples, sem RHF aqui)
@@ -46,35 +46,35 @@ export default function ReportEditorPage() {
 
   const handlePrint = useReactToPrint({
     contentRef:  printRef,
-    documentTitle: wo?.code ? `RELATORIO-${wo.code}` : "RELATORIO",
+   // documentTitle: wo?.code ? `RELATORIO-${wo.code}` : "RELATORIO",
   });
 
   useEffect(() => {
     if (!woId) return;
 
-    const u1 = subscribeWorkOrderById(woId, setWo);
-    const u2 = subscribeClients(setClients);
-    const u3 = subscribeVessels(setVessels);
-    const u4 = subscribeEquipment(setEquipment);
+   // const u1 = subscribeWorkOrderById(woId, setWo);
+    //const u2 = subscribeClients(setClients);
+    //const u3 = subscribeVessels(setVessels);
+    ///const u4 = subscribeEquipment(setEquipment);
     //const u5 = subscribeReportByWO(woId, setReport);
 
     return () => {
-      u1();
-      u2();
-      u3();
-      u4();
+      //u1();
+      //u2();
+     // u3();
+     // u4();
       //u5();
     };
   }, [woId]);
 
   // Maps
-  const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+ /*  const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
   const vesselMap = useMemo(() => new Map(vessels.map((v) => [v.id, v])), [vessels]);
-  const equipmentMap = useMemo(() => new Map(equipment.map((e) => [e.id, e])), [equipment]);
+  const equipmentMap = useMemo(() => new Map(equipment.map((e) => [e.id, e])), [equipment]); */
 
-  const client = wo ? clientMap.get(wo.clientId) ?? null : null;
+  /* const client = wo ? clientMap.get(wo.clientId) ?? null : null;
   const vessel = wo?.vesselId ? vesselMap.get(wo.vesselId) ?? null : null;
-  const equipmentItem = wo?.equipmentId ? equipmentMap.get(wo.equipmentId) ?? null : null;
+  const equipmentItem = wo?.equipmentId ? equipmentMap.get(wo.equipmentId) ?? null : null; */
 
   // Se não existe report ainda, pré-preenche uma vez com dados da OS
   /* useEffect(() => {
@@ -122,7 +122,7 @@ export default function ReportEditorPage() {
     );
   }
 
-  if (!wo) {
+  /* if (!wo) {
     return (
       <Card>
         <CardBody>
@@ -130,13 +130,13 @@ export default function ReportEditorPage() {
         </CardBody>
       </Card>
     );
-  }
+  } */
 
   return (
     <Stack spacing={4}>
       {/* hidden print area */}
       <Box position="absolute" left="-99999px" top={0}>
-        <Box ref={printRef}>
+        {/* <Box ref={printRef}>
           <ReportPrintView
             report={{
               id: woId,
@@ -150,12 +150,12 @@ export default function ReportEditorPage() {
             vessel={vessel}
             equipment={equipmentItem}
           />
-        </Box>
+        </Box> */}
       </Box>
 
       <HStack justify="space-between">
         <Box>
-          <Heading size="md">Relatório • {wo.code}</Heading>
+         {/*  <Heading size="md">Relatório • {wo.code}</Heading> */}
         </Box>
 
         <HStack>
