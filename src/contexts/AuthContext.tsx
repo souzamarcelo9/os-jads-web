@@ -6,6 +6,7 @@ export type AuthContextValue = {
   isLoading: boolean;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signupWithEmail: (name: string, email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>; // ✅ novo
   logoutUser: () => Promise<void>;
 };
 

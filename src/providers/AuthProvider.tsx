@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 import { login, logout, onAuthChanged, signup } from "../lib/firebase/auth";
 import { initFCM } from "../lib/firebase/messaging";
 import { AuthContext, type AuthContextValue } from "../contexts/AuthContext";
+import { resetPassword as resetPasswordFn } from "../lib/firebase/auth";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -47,21 +48,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      isLoading,
-      async loginWithEmail(email, password) {
-        await login(email, password);
-      },
-      async signupWithEmail(name, email, password) {
-        await signup(email, password, name);
-      },
-      async logoutUser() {
-        await logout();
-      },
-    }),
-    [user, isLoading]
-  );
+  () => ({
+    user,
+    isLoading,
+    async loginWithEmail(email, password) {
+      await login(email, password);
+    },
+    async signupWithEmail(name, email, password) {
+      await signup(email, password, name);
+    },
+    async logoutUser() {
+      await logout();
+    },
+    async resetPassword(email) {
+      await resetPasswordFn(email);
+    }, // ✅ vírgula
+  }),
+  [user, isLoading]
+);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

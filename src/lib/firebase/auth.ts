@@ -4,6 +4,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 
 import { auth } from "./firebase";
@@ -28,4 +29,14 @@ export async function login(email: string, password: string) {
 
 export async function logout() {
   await signOut(auth);
+}
+
+/**
+ * Envia e-mail de redefinição de senha.
+ * Obs: o Firebase só envia se o e-mail existir (mas a resposta pode ser genérica).
+ */
+export async function resetPassword(email: string) {
+  const trimmed = email.trim();
+  if (!trimmed) throw new Error("E-mail inválido");
+  await sendPasswordResetEmail(auth, trimmed);
 }
