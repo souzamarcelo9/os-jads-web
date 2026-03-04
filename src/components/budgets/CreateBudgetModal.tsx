@@ -19,10 +19,12 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Text,
   useToast,
 } from "@chakra-ui/react";
-import { Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { get, ref } from "firebase/database";
+import { rtdb } from "../../lib/firebase/firebase";
 import { createBudget } from "../../lib/firebase/budgets.db";
 import type { Budget, BudgetKind, BudgetPricing, HourRates } from "../../lib/firebase/budgets.types";
 
@@ -65,6 +67,33 @@ export function CreateBudgetModal(props: {
     async function onCreate() {
       try {
         setIsSaving(true);
+        // ✅ Regra do novo fluxo:
+        // - Para orçamento de SERVIÇO, o relatório deve existir antes.
+        // - Para POR_HORA, o relatório deve ter a "Demonstração Geral de Horas Trabalhadas" preenchida.
+        if (kind === "SERVICO") {
+          const repSnap = await get(ref(rtdb, `/tenants/default/reports/${props.workOrderId}`));
+          if (!repSnap.exists()) {
+            toast({
+              status: "warning",
+              title: "Preencha o relatório antes do orçamento",
+              description: "Abra o Relatório (editar / imprimir), preencha e salve. Depois crie o orçamento.",
+            });
+            return;
+          }
+
+          if (pricing === "POR_HORA") {
+            const rep = repSnap.val() as { workedHours?: Record<string, unknown> | null };
+            const hasRows = !!rep.workedHours && Object.keys(rep.workedHours).length > 0;
+            if (!hasRows) {
+              toast({
+                status: "warning",
+                title: "Informe as horas no relatório",
+                description: "Preencha a tabela 'Demonstração Geral de Horas Trabalhadas' no relatório antes de criar o orçamento por horas.",
+              });
+              return;
+            }
+          }
+        }
 
         const title =
           kind === "ANALISE"

@@ -31,7 +31,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 
-// ✅ Ajuste para os seus caminhos
 import {
   subscribeWorkOrderById,
   subscribeClients,
@@ -43,13 +42,11 @@ import {
   type Equipment,
 } from "../lib/firebase/db";
 
-// ✅ Ajuste para os seus caminhos
 import {
   subscribeReportByWorkOrderId,
   upsertReport,
 } from "../lib/firebase/reports.db";
 
-// ✅ Ajuste para os seus caminhos
 import type {
   WorkOrderReport,
   ReportMaterialRow,
@@ -68,10 +65,73 @@ type WorkOrderView = WorkOrder & {
 
 const LOGO_SRC = `${import.meta.env.BASE_URL}godwrites-logo.jpg`;
 
+/** ----------------- Normalização de Data/Hora ----------------- */
+
+// hoje em ISO (YYYY-MM-DD)
+function nowISODate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// valida ISO date
+function isISODate(v: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+
+// converte dd/mm/yyyy -> yyyy-mm-dd (se possível)
+function brToISODate(v: string) {
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = m[1];
+  const mm = m[2];
+  const yyyy = m[3];
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// converte yyyy-mm-dd -> dd/mm/yyyy (para exibir)
+function isoToBRDate(v: string) {
+  if (!isISODate(v)) return v;
+  const [yyyy, mm, dd] = v.split("-");
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+// tenta “coagir” qualquer string de data para ISO (ou null)
+function coerceDateToISO(v?: string | null) {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  if (isISODate(s)) return s;
+  const iso = brToISODate(s);
+  return iso ?? null;
+}
+
+// time HH:MM
+function isTimeHHMM(v: string) {
+  // 00:00 - 23:59
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+}
+
+// transforma "8:5" etc em "08:05" (se der)
+function normalizeTime(v: string) {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  const m = s.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!m) return s; // deixa como está (o type="time" normalmente impede)
+  const hh = String(Number(m[1])).padStart(2, "0");
+  const mm = String(Number(m[2])).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+// compara HH:MM
+function timeToMinutes(t: string) {
+  const [hh, mm] = t.split(":").map((x) => Number(x));
+  return hh * 60 + mm;
+}
+
 function uid() {
-  // Node 18+/Browsers: crypto.randomUUID
-  // fallback simples
-  
   return (globalThis.crypto?.randomUUID?.() ?? `id_${Date.now()}_${Math.random().toString(16).slice(2)}`);
 }
 
@@ -82,10 +142,6 @@ function safe(s?: string | null) {
 function cleanUndefined<T>(obj: T): T {
   // RTDB não aceita undefined em nenhum nível
   return JSON.parse(JSON.stringify(obj));
-}
-
-function nowDateBR() {
-  return new Date().toLocaleDateString("pt-BR");
 }
 
 function isEmpty(v: unknown) {
@@ -109,7 +165,6 @@ const SERVICE_TYPE_OPTIONS: { key: ReportServiceType; label: string }[] = [
   { key: "OUTROS", label: "Outros" },
 ];
 
-
 function buildEmptyReport(workOrderId: string, wo?: WorkOrder | null): WorkOrderReport {
   const baseArea = Object.fromEntries(AREA_OPTIONS.map((o) => [o.key, false])) as WorkOrderReport["area"];
   const baseServiceType = Object.fromEntries(SERVICE_TYPE_OPTIONS.map((o) => [o.key, false])) as WorkOrderReport["serviceType"];
@@ -120,9 +175,9 @@ function buildEmptyReport(workOrderId: string, wo?: WorkOrder | null): WorkOrder
     createdAt: Date.now(),
     updatedAt: Date.now(),
 
-    serviceDate: nowDateBR(),
+    serviceDate: nowISODate(), // ✅ ISO
 
-    vesselName: wo?.code ? null : null, // aqui é melhor deixar vazio e preencher pelo useEffect
+    vesselName: null,
     osNumber: wo?.code ? null : workOrderId,
     location: null,
     imo: null,
@@ -150,7 +205,7 @@ function buildEmptyReport(workOrderId: string, wo?: WorkOrder | null): WorkOrder
 
     acceptanceRepresentative: null,
     acceptanceRole: null,
-    acceptanceDate: null,
+    acceptanceDate: null, // ✅ também será ISO quando preenchida
     acceptanceSignature: null,
     acceptanceStamp: null,
   };
@@ -183,12 +238,10 @@ export default function ReportDetailsPage() {
   const [report, setReport] = useState<WorkOrderReport | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // tabelas editáveis
   const [materials, setMaterials] = useState<ReportMaterialRow[]>([]);
   const [hoursRows, setHoursRows] = useState<ReportHoursRow[]>([]);
 
   const woV = wo as WorkOrderView | null;
-  //const eqV = equipmentItem as EquipmentView | null;
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -200,7 +253,6 @@ export default function ReportDetailsPage() {
     },
   });
 
-  // lookups OS (igual você já faz no budget)
   useEffect(() => {
     const u1 = subscribeClients(setClients);
     const u2 = subscribeVessels(setVessels);
@@ -221,59 +273,74 @@ export default function ReportDetailsPage() {
   const client = woV?.clientId ? (clientMap.get(woV.clientId) ?? null) : null;
   const vessel = woV?.vesselId ? (vesselMap.get(woV.vesselId) ?? null) : null;
   const equipmentItem = woV?.equipmentId ? (equipmentMap.get(woV.equipmentId) ?? null) : null;
-  
+
   useEffect(() => {
-  if (!report || !wo) return;
+    if (!report || !wo) return;
 
-  setReport((prev) => {
-    if (!prev) return prev;
+    setReport((prev) => {
+      if (!prev) return prev;
 
-    const next = { ...prev };
+      const next = { ...prev };
 
-    if (isEmpty(next.osNumber)) next.osNumber = wo.code ?? prev.workOrderId;
-    if (isEmpty(next.vesselName)) next.vesselName = vessel?.name ?? "";
-    if (isEmpty(next.shipOwner)) next.shipOwner = client?.name ?? "";
-    if (isEmpty(next.serviceDate)) next.serviceDate = new Date().toLocaleDateString("pt-BR");
+      if (isEmpty(next.osNumber)) next.osNumber = wo.code ?? prev.workOrderId;
+      if (isEmpty(next.vesselName)) next.vesselName = vessel?.name ?? "";
+      if (isEmpty(next.shipOwner)) next.shipOwner = client?.name ?? "";
+      if (isEmpty(next.serviceDate)) next.serviceDate = nowISODate(); // ✅ ISO
 
-    if (isEmpty(next.equipmentName)) next.equipmentName = equipmentItem?.name ?? "";
-    if (isEmpty(next.model)) next.model = equipmentItem?.model ?? "";
-    if (isEmpty(next.serialNumber)) next.serialNumber = equipmentItem?.serial ?? "";
+      if (isEmpty(next.equipmentName)) next.equipmentName = equipmentItem?.name ?? "";
+      if (isEmpty(next.model)) next.model = equipmentItem?.model ?? "";
+      if (isEmpty(next.serialNumber)) next.serialNumber = equipmentItem?.serial ?? "";
 
-    if (isEmpty(next.servicesPerformed) && !isEmpty(wo.reportedDefect)) {
-      next.servicesPerformed = `Defeito relatado: ${wo.reportedDefect}`;
-    }
+      if (isEmpty(next.servicesPerformed) && !isEmpty(wo.reportedDefect)) {
+        next.servicesPerformed = `Defeito relatado: ${wo.reportedDefect}`;
+      }
 
-    const changed = JSON.stringify(next) !== JSON.stringify(prev);
-    return changed ? { ...next, updatedAt: Date.now() } : prev;
-  });
+      const changed = JSON.stringify(next) !== JSON.stringify(prev);
+      return changed ? { ...next, updatedAt: Date.now() } : prev;
+    });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [
-  report?.id,
-  wo?.id,
-  wo?.code,
-  wo?.reportedDefect,
-  client?.name,
-  vessel?.name,
-  equipmentItem?.name,
-  equipmentItem?.model,
-  equipmentItem?.serial,
-]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    report?.id,
+    wo?.id,
+    wo?.code,
+    wo?.reportedDefect,
+    client?.name,
+    vessel?.name,
+    equipmentItem?.name,
+    equipmentItem?.model,
+    equipmentItem?.serial,
+  ]);
 
   // subscribe report (1 por OS)
   useEffect(() => {
     if (!workOrderId) return;
     const unsub = subscribeReportByWorkOrderId(workOrderId, (r) => {
-      const next = r ?? buildEmptyReport(workOrderId, wo);
-      setReport(next);
-      setMaterials(mapToArray(next.materials));
-      setHoursRows(mapToArray(next.workedHours));
+      const raw = r ?? buildEmptyReport(workOrderId, wo);
+
+      // ✅ normaliza datas (serviceDate/acceptanceDate)
+      const normalized: WorkOrderReport = {
+        ...raw,
+        serviceDate: coerceDateToISO(raw.serviceDate) ?? nowISODate(),
+        acceptanceDate: coerceDateToISO(raw.acceptanceDate) ?? null,
+      };
+
+      setReport(normalized);
+      setMaterials(mapToArray(normalized.materials));
+
+      // ✅ normaliza workedHours (date + times)
+      const hrs = mapToArray(normalized.workedHours).map((x) => ({
+        ...x,
+        date: coerceDateToISO(x.date) ?? "",
+        start: x.start ? normalizeTime(x.start) : "",
+        end: x.end ? normalizeTime(x.end) : "",
+      }));
+      setHoursRows(hrs);
     });
-   return () => {
-   if (typeof unsub === "function") {
-    unsub();
-  }
-};
+
+    return () => {
+      if (typeof unsub === "function") unsub();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workOrderId]);
 
@@ -333,7 +400,7 @@ export default function ReportDetailsPage() {
   function addHoursRow() {
     setHoursRows((prev) => [
       ...prev,
-      { id: uid(), date: "", start: "", end: "" },
+      { id: uid(), date: nowISODate(), start: "", end: "" }, // ✅ date já nasce ISO
     ]);
   }
   function removeHoursRow(id: string) {
@@ -343,8 +410,59 @@ export default function ReportDetailsPage() {
     setHoursRows((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   }
 
+  function validateAndNormalizeHoursRows(rows: ReportHoursRow[]) {
+    // remove linhas completamente vazias
+    const cleaned = rows
+      .map((r) => ({
+        ...r,
+        date: (coerceDateToISO(r.date) ?? "").trim(),
+        start: normalizeTime(r.start ?? "").trim(),
+        end: normalizeTime(r.end ?? "").trim(),
+      }))
+      .filter((r) => !(isEmpty(r.date) && isEmpty(r.start) && isEmpty(r.end)));
+
+    // valida consistência
+    for (let i = 0; i < cleaned.length; i++) {
+      const r = cleaned[i];
+      const rowLabel = `Linha ${i + 1}`;
+
+      const anyFilled = !!(r.date || r.start || r.end);
+      const allFilled = !!(r.date && r.start && r.end);
+
+      if (anyFilled && !allFilled) {
+        return { ok: false as const, error: `${rowLabel}: preencha Data, Início e Fim.` };
+      }
+
+      if (r.date && !isISODate(r.date)) {
+        return { ok: false as const, error: `${rowLabel}: data inválida.` };
+      }
+      if (r.start && !isTimeHHMM(r.start)) {
+        return { ok: false as const, error: `${rowLabel}: hora de início inválida.` };
+      }
+      if (r.end && !isTimeHHMM(r.end)) {
+        return { ok: false as const, error: `${rowLabel}: hora de fim inválida.` };
+      }
+      if (r.start && r.end) {
+        const s = timeToMinutes(r.start);
+        const e = timeToMinutes(r.end);
+        if (e <= s) {
+          return { ok: false as const, error: `${rowLabel}: "Fim" precisa ser maior que "Início".` };
+        }
+      }
+    }
+
+    return { ok: true as const, rows: cleaned };
+  }
+
   async function onSave() {
     if (!report || !workOrderId) return;
+
+    // ✅ normaliza/valida horas antes de salvar
+    const vH = validateAndNormalizeHoursRows(hoursRows);
+    if (!vH.ok) {
+      toast({ status: "error", title: "Horas trabalhadas inválidas", description: vH.error });
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -352,24 +470,27 @@ export default function ReportDetailsPage() {
         ...report,
         workOrderId,
         id: workOrderId,
+
+        // ✅ datas em ISO no banco
+        serviceDate: coerceDateToISO(report.serviceDate) ?? nowISODate(),
+        acceptanceDate: coerceDateToISO(report.acceptanceDate) ?? null,
+
         vesselName: safe(report.vesselName) || (vessel?.name ?? null),
         equipmentName: safe(report.equipmentName) || (equipmentItem?.name ?? null),
         osNumber: safe(report.osNumber) || (wo?.code ?? workOrderId),
 
         materials: materials.length ? arrayToMap(materials) : null,
-        workedHours: hoursRows.length ? arrayToMap(hoursRows) : null,
+        workedHours: vH.rows.length ? arrayToMap(vH.rows) : null,
 
         updatedAt: Date.now(),
       });
 
       await upsertReport(payload);
-
       toast({ status: "success", title: "Relatório salvo" });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ status: "error", title: "Erro ao salvar relatório", description: msg });
-    }
-    finally {
+    } finally {
       setIsSaving(false);
     }
   }
@@ -423,7 +544,7 @@ export default function ReportDetailsPage() {
 
               <HStack mt={3} spacing={2}>
                 <Badge colorScheme="blue">RELATÓRIO</Badge>
-                <Badge variant="subtle">{report.serviceDate || "-"}</Badge>
+                <Badge variant="subtle">{report.serviceDate ? isoToBRDate(report.serviceDate) : "-"}</Badge>
               </HStack>
             </Box>
 
@@ -448,7 +569,11 @@ export default function ReportDetailsPage() {
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
               <FormControl>
                 <FormLabel>Data do Atendimento</FormLabel>
-                <Input value={report.serviceDate ?? ""} onChange={(e) => setField("serviceDate", e.target.value)} />
+                <Input
+                  type="date"
+                  value={coerceDateToISO(report.serviceDate) ?? ""}
+                  onChange={(e) => setField("serviceDate", e.target.value)}
+                />
               </FormControl>
 
               <FormControl>
@@ -688,13 +813,30 @@ export default function ReportDetailsPage() {
                     hoursRows.map((h) => (
                       <Tr key={h.id}>
                         <Td>
-                          <Input size="sm" value={h.date ?? ""} onChange={(e) => updateHoursRow(h.id, { date: e.target.value })} />
+                          <Input
+                            type="date"
+                            size="sm"
+                            value={coerceDateToISO(h.date) ?? ""}
+                            onChange={(e) => updateHoursRow(h.id, { date: e.target.value })}
+                          />
                         </Td>
                         <Td>
-                          <Input size="sm" value={h.start ?? ""} onChange={(e) => updateHoursRow(h.id, { start: e.target.value })} />
+                          <Input
+                            type="time"
+                            size="sm"
+                            value={h.start ?? ""}
+                            onChange={(e) => updateHoursRow(h.id, { start: e.target.value })}
+                            onBlur={(e) => updateHoursRow(h.id, { start: normalizeTime(e.target.value) })}
+                          />
                         </Td>
                         <Td>
-                          <Input size="sm" value={h.end ?? ""} onChange={(e) => updateHoursRow(h.id, { end: e.target.value })} />
+                          <Input
+                            type="time"
+                            size="sm"
+                            value={h.end ?? ""}
+                            onChange={(e) => updateHoursRow(h.id, { end: e.target.value })}
+                            onBlur={(e) => updateHoursRow(h.id, { end: normalizeTime(e.target.value) })}
+                          />
                         </Td>
                         <Td textAlign="right">
                           <IconButton
@@ -727,7 +869,11 @@ export default function ReportDetailsPage() {
               </FormControl>
               <FormControl>
                 <FormLabel>Data</FormLabel>
-                <Input value={report.acceptanceDate ?? ""} onChange={(e) => setField("acceptanceDate", e.target.value)} />
+                <Input
+                  type="date"
+                  value={coerceDateToISO(report.acceptanceDate) ?? ""}
+                  onChange={(e) => setField("acceptanceDate", e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Carimbo</FormLabel>
@@ -781,7 +927,6 @@ function ReportPrintView(props: {
         `}
       </style>
 
-      {/* Cabeçalho */}
       <HStack justify="space-between" align="start" mb={4}>
         <Box>
           <Box as="img" src={LOGO_SRC} alt="God Writes" style={{ height: "52px", objectFit: "contain" }} />
@@ -796,12 +941,11 @@ function ReportPrintView(props: {
 
         <Box textAlign="right">
           <Heading size="sm" color="#1E3A8A">RELATÓRIO DE SERVIÇO</Heading>
-          <Text fontSize="11px">Data: <b>{report.serviceDate || "-"}</b></Text>
+          <Text fontSize="11px">Data: <b>{report.serviceDate ? isoToBRDate(report.serviceDate) : "-"}</b></Text>
           <Text fontSize="11px">OS: <b>{report.osNumber || report.workOrderId}</b></Text>
         </Box>
       </HStack>
 
-      {/* Dados do Atendimento */}
       <Box className="section" borderRadius="10px" overflow="hidden" mb={3}>
         <Box className="titlebar">DADOS DO ATENDIMENTO</Box>
         <Box p={3}>
@@ -816,7 +960,6 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Identificação do Equipamento */}
       <Box className="section" borderRadius="10px" overflow="hidden" mb={3}>
         <Box className="titlebar">IDENTIFICAÇÃO DO EQUIPAMENTO</Box>
         <Box p={3}>
@@ -829,7 +972,6 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Área / Tipo */}
       <SimpleGrid columns={2} spacing={3} mb={3}>
         <Box className="section" borderRadius="10px" overflow="hidden">
           <Box className="titlebar">ÁREA DE ATUAÇÃO</Box>
@@ -860,7 +1002,6 @@ function ReportPrintView(props: {
         </Box>
       </SimpleGrid>
 
-      {/* Textos */}
       <Box className="section" borderRadius="10px" overflow="hidden" mb={3}>
         <Box className="titlebar">DESCRIÇÃO DOS SERVIÇOS REALIZADOS</Box>
         <Box p={3} fontSize="11px" whiteSpace="pre-wrap" minH="80px">
@@ -875,7 +1016,6 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Materiais */}
       <Box className="section" borderRadius="10px" overflow="hidden" mb={3}>
         <Box className="titlebar">MATERIAIS UTILIZADOS</Box>
         <Box p={0}>
@@ -908,7 +1048,6 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Horas */}
       <Box className="section" borderRadius="10px" overflow="hidden">
         <Box className="titlebar">DEMONSTRAÇÃO GERAL DE HORAS TRABALHADAS</Box>
         <Box p={0}>
@@ -926,7 +1065,7 @@ function ReportPrintView(props: {
               ) : (
                 hoursRows.map((h) => (
                   <Tr key={h.id}>
-                    <Td fontSize="10px">{h.date || "-"}</Td>
+                    <Td fontSize="10px">{h.date ? isoToBRDate(h.date) : "-"}</Td>
                     <Td fontSize="10px">{h.start || "-"}</Td>
                     <Td fontSize="10px">{h.end || "-"}</Td>
                   </Tr>
@@ -937,7 +1076,6 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Observações gerais */}
       <Box className="section" borderRadius="10px" overflow="hidden" mt={3}>
         <Box className="titlebar">OBSERVAÇÕES GERAIS</Box>
         <Box p={3} fontSize="11px" whiteSpace="pre-wrap" minH="45px">
@@ -945,10 +1083,8 @@ function ReportPrintView(props: {
         </Box>
       </Box>
 
-      {/* Quebra de página */}
       <Box sx={{ pageBreakBefore: "always" }} />
 
-      {/* TERMO DE ACEITE */}
       <Heading size="sm" color="#1E3A8A" mb={2}>TERMO DE ACEITE DO CLIENTE</Heading>
       <Text fontSize="11px" mb={4}>
         Declaro que os serviços descritos neste relatório foram executados conforme informado e dou ciência/aceite.
@@ -957,7 +1093,7 @@ function ReportPrintView(props: {
       <SimpleGrid columns={2} spacing={4} fontSize="11px">
         <LineP label="Representante" value={report.acceptanceRepresentative} />
         <LineP label="Cargo" value={report.acceptanceRole} />
-        <LineP label="Data" value={report.acceptanceDate} />
+        <LineP label="Data" value={report.acceptanceDate ? isoToBRDate(report.acceptanceDate) : null} />
         <LineP label="Carimbo" value={report.acceptanceStamp} />
       </SimpleGrid>
 

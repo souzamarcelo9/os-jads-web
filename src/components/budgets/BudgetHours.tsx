@@ -22,6 +22,7 @@ import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import { useEffect, useMemo, useState } from "react";
 import { upsertHourEntry, removeHourEntry } from "../../lib/firebase/budgets.db";
 import type { Budget, HourEntry, HourRates } from "../../lib/firebase/budgets.types";
+import { syncBudgetHoursFromReport } from "../../lib/firebase/budgets.db";
 
 type HourEntryPatch = Omit<
   Partial<HourEntry>,
@@ -302,17 +303,29 @@ export function BudgetHours({ budget }: { budget: Budget }) {
   return (
     <Stack spacing={4}>
       <HStack justify="space-between">
-        <Box>
-          <Heading size="sm">Horas do atendimento</Heading>
-          <Text fontSize="sm" color="gray.600">
-            Digite as horas. Os valores/hora são automáticos (herdam do orçamento).
-          </Text>
-        </Box>
+    <Box>
+      <Heading size="sm">Horas do atendimento</Heading>
+      <Text fontSize="sm" color="gray.600">
+        Digite as horas. Os valores/hora são automáticos (herdam do orçamento).
+      </Text>
+    </Box>
+
+      <HStack>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            await syncBudgetHoursFromReport(budget.id, budget.workOrderId);
+          }}
+        >
+          Sincronizar do Relatório
+        </Button>
 
         <Button leftIcon={<AddIcon />} onClick={addRow} colorScheme="brand" size="sm">
           Adicionar linha
         </Button>
       </HStack>
+    </HStack>
 
       {/* ✅ Totalizadores solicitados */}
       <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
@@ -358,7 +371,7 @@ export function BudgetHours({ budget }: { budget: Budget }) {
               <Th isNumeric>R$/h</Th>
               <Th isNumeric>HH Extra</Th>
               <Th isNumeric>R$/h</Th>
-              <Th isNumeric>HH Desloc Normal</Th>
+              <Th isNumeric>HH Esp/Norm Desloc </Th>
               <Th isNumeric>R$/h</Th>
               <Th isNumeric>HH Desloc Extra</Th>
               <Th isNumeric>R$/h</Th>
@@ -367,7 +380,7 @@ export function BudgetHours({ budget }: { budget: Budget }) {
               <Th isNumeric>R$/h</Th>
               <Th isNumeric>HH Extra</Th>
               <Th isNumeric>R$/h</Th>
-              <Th isNumeric>HH Desloc Normal</Th>
+              <Th isNumeric>HH Esp/Norm Desloc</Th>
               <Th isNumeric>R$/h</Th>
               <Th isNumeric>HH Desloc Extra</Th>
               <Th isNumeric>R$/h</Th>
@@ -411,7 +424,9 @@ export function BudgetHours({ budget }: { budget: Budget }) {
                   </Td>
 
                   {/* TÉCNICO */}
-                  <Td isNumeric>
+
+                  {/* HH Normal */}
+                  <Td isNumeric> 
                     <NumberInput
                       value={String(e.techNormalHours ?? 0)}
                       min={0}
@@ -423,7 +438,8 @@ export function BudgetHours({ budget }: { budget: Budget }) {
                     </NumberInput>
                   </Td>
                   <Td isNumeric><RateCell value={toNum(r.techNormal)} /></Td>
-
+                  
+                  {/* HH Extra */}
                   <Td isNumeric>
                     <NumberInput
                       value={String(e.techExtraHours ?? 0)}
@@ -436,7 +452,8 @@ export function BudgetHours({ budget }: { budget: Budget }) {
                     </NumberInput>
                   </Td>
                   <Td isNumeric><RateCell value={toNum(r.techExtra)} /></Td>
-
+                  
+                  {/*HH Esp/Norm Desloc*/}
                   <Td isNumeric>
                     <NumberInput
                       value={String(e.techTravelNormalHours ?? 0)}
@@ -463,7 +480,7 @@ export function BudgetHours({ budget }: { budget: Budget }) {
                   </Td>
                   <Td isNumeric><RateCell value={toNum(r.techTravelExtra)} /></Td>
 
-                  {/* AUXILIAR */}
+                  {/* AUXILIAR ==================================================*/}
                   <Td isNumeric>
                     <NumberInput
                       value={String(e.auxNormalHours ?? 0)}

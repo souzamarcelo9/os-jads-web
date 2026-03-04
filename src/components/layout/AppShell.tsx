@@ -19,7 +19,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FiAnchor,FiClipboard, FiHome, FiLogOut, FiMessageSquare, FiRadio, FiSearch, FiTool, FiUsers } from "react-icons/fi";
+import { FiAnchor,FiClipboard, FiDollarSign, FiHome, FiLogOut, FiMessageSquare, FiRadio, FiSearch, FiTool, FiUsers } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
 
 
@@ -31,7 +31,8 @@ const navItems = [
   { to: "/app/equipment", label: "Equipamentos", icon: FiTool },
   { to: "/app/work-orders-kanban", label: "Kanban", icon: FiMessageSquare },
  // { to: "/app/budgets", label: "Orçamentos", icon: FiDollarSign },
-  { to: "/app/reports", label: "Relatórios", icon: FiRadio }
+  { to: "/app/reports", label: "Relatórios", icon: FiRadio },
+  { to: "/app/finance", label: "Financeiro", icon: FiDollarSign },
 ];
 
 const linkStyle = ({ isActive }: { isActive: boolean }) => ({

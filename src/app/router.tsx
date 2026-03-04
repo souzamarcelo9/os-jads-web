@@ -17,6 +17,7 @@ import BudgetDetailsPage from "../pages/BudgetDetails";
 //import ReportEditorPage from "../pages/ReportEditor";
 import ReportDetailsPage from "../pages/ReportDetailsPage";
 import ReportsListPage from "../pages/ReportsListPage";
+import FinancePage from "../pages/FinancePage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app/dashboard" replace /> },
@@ -42,7 +43,8 @@ export const router = createBrowserRouter([
       { path: "budgets/:id", element: <BudgetDetailsPage /> },
       { path: "reports", element: <ReportsListPage /> },      
       { path: "reports/new", element: <ReportDetailsPage /> },
-      { path: "reports/:workOrderId", element: <ReportDetailsPage /> },        
+      { path: "reports/:workOrderId", element: <ReportDetailsPage /> },     
+      { path: "finance" , element: <FinancePage />}   
       //<Route path="/app/reports/:workOrderId" element={<ReportDetailsPage />} />          
     ],
   },

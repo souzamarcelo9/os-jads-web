@@ -61,8 +61,9 @@
   //import type { Budget, BudgetKind, BudgetPricing, HourRates } from "../lib/firebase/budgets.types";
   import type { Budget } from "../lib/firebase/budgets.types";
   import { subscribeBudgetsByWorkOrder } from "../lib/firebase/budgets.db";
+  import { upsertReceivableFromApprovedBudget } from "../lib/firebase/finance.db";
   import { useAuth } from "../contexts/AuthContext";
-  //import { Link as RouterLink } from "react-router-dom";
+  import { Link as RouterLink } from "react-router-dom";
 import { CreateBudgetModal } from "../components/budgets/CreateBudgetModal";
 
   
@@ -159,6 +160,48 @@ import { CreateBudgetModal } from "../components/budgets/CreateBudgetModal";
       }
       try {
         await changeWorkOrderStatus(id, wo.status, newStatus, note);
+
+        // ✅ Fechamento do processo: OS CONCLUIDO -> cria título no financeiro (se houver orçamento aprovado)
+        if (newStatus === "CONCLUIDO") {
+          const approved = [...budgets]
+            .filter((b) => b.status === "APROVADO")
+            // prioriza SERVICO; se não houver, pega o que existir
+            .sort((a, b) => {
+              const ak = a.kind === "SERVICO" ? 0 : 1;
+              const bk = b.kind === "SERVICO" ? 0 : 1;
+              if (ak !== bk) return ak - bk;
+              const ad = (a.decidedAt ?? 0) || (a.createdAt ?? 0);
+              const bd = (b.decidedAt ?? 0) || (b.createdAt ?? 0);
+              return bd - ad;
+            })[0];
+
+          if (approved) {
+            try {
+              await upsertReceivableFromApprovedBudget({
+                workOrder: { ...wo, status: "CONCLUIDO", statusUpdatedAt: Date.now() },
+                budget: approved,
+                clientName: clientMap.get(wo.clientId)?.name ?? null,
+                vesselName: wo.vesselId ? (vesselMap.get(wo.vesselId)?.name ?? null) : null,
+                equipmentName: wo.equipmentId ? (equipmentMap.get(wo.equipmentId)?.name ?? null) : null,
+              });
+              toast({ status: "success", title: "Título criado no Financeiro" });
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : String(e);
+              toast({
+                status: "warning",
+                title: "OS concluída, mas não foi possível criar o título no financeiro",
+                description: msg,
+              });
+            }
+          } else {
+            toast({
+              status: "info",
+              title: "OS concluída",
+              description: "Nenhum orçamento APROVADO encontrado para gerar o título financeiro.",
+            });
+          }
+        }
+
         setNote("");
         toast({ status: "success", title: "Status atualizado." });
       } catch (err: unknown) {
@@ -260,9 +303,8 @@ import { CreateBudgetModal } from "../components/budgets/CreateBudgetModal";
                   Exportar PDF
                 </Button>
 
-                {/* ✅ mais espaçamento */}
-                <Button mt={2} variant="outline" onClick={() => navigate(`/app/reports/${wo.id}`)}>
-                  Relatório (editar / imprimir)
+                <Button mt={4} as={RouterLink} to={`/app/reports/${wo.id}`} variant="outline" width="100%">
+                  Relatório Técnico(editar / imprimir)
                 </Button>
               </Box>
             </HStack>
@@ -275,7 +317,7 @@ import { CreateBudgetModal } from "../components/budgets/CreateBudgetModal";
         <Box>
           <Heading size="sm">Orçamentos</Heading>
           <Text fontSize="sm" color="gray.600">
-            Crie e acompanhe aprovação do cliente.
+            Crie um Relatório de Medição / Proposta comercial de serviço.
           </Text>
         </Box>
 
